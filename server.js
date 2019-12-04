@@ -26,6 +26,17 @@ function validateUserId(req, res, next) {
   next();
 }
 
+function validateUser(req, res, next) {
+  if (!req.body) {
+    res.status(400).json({ errorMessage: "Missing user data" }); // I am only getting the 'missing required name field' error even if I send back nothing
+  } else if (!req.body.name) {
+    res.status(400).json({ errorMessage: "Missing required name field" });
+  }
+  next();
+}
+
+// function validatePost()
+
 server.get("/", (req, res) => {
   res.send(`<h2>Let's write some middleware!</h2>`);
 });
@@ -66,8 +77,11 @@ server.get("/posts", (req, res) => {
     });
 });
 
-// function validateUser()
-
-// function validatePost()
+server.post("/users", validateUser, (req, res) => {
+  let user = req.body;
+  userDb.insert(user).then(data => {
+    res.status(201).json({ ...data, ...user });
+  });
+});
 
 module.exports = server;
