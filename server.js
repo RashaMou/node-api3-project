@@ -104,10 +104,28 @@ server.post("/user", validateUser, (req, res) => {
 });
 
 server.post("/user/:id/posts", (req, res) => {
-  let post = req.body;
-  postDb.insert(post).then(data => {
-    res.status(201).json({ ...data, ...post });
-  });
+  const id = req.params.id;
+  let newPost = req.body;
+
+  userDb
+    .getById(id)
+    .then(user => {
+      user
+        ? postDb
+            .insert(newPost)
+            .then(post => {
+              res.status(201).json({ post, newPost });
+            })
+            .catch(error => {
+              res.status(500).json({ message: "Could not create post" });
+            })
+        : res
+            .status(404)
+            .json({ message: "The user with the specified ID does not exist" });
+    })
+    .catch(error => {
+      res.status(500).json({ message: "There was an error saving the post" });
+    });
 });
 
 module.exports = server;
