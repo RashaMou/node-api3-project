@@ -35,13 +35,20 @@ function validateUser(req, res, next) {
   next();
 }
 
-// function validatePost()
+function validatePost(req, res, next) {
+  if (!req.body) {
+    res.status(400).json({ errorMessage: "Missing post data" });
+  } else if (!req.body.text) {
+    res.status(400).json({ errorMessage: "Missing required text field" });
+  }
+  next();
+}
 
 server.get("/", (req, res) => {
   res.send(`<h2>Let's write some middleware!</h2>`);
 });
 
-server.get("/users", (req, res) => {
+server.get("/user", (req, res) => {
   userDb
     .get()
     .then(users => {
@@ -49,20 +56,6 @@ server.get("/users", (req, res) => {
     })
     .catch(error => {
       res.status(500).json({ errorMessage: "Users could not be retrieved" });
-    });
-});
-
-server.get("/users/:id", validateUserId, (req, res) => {
-  const id = req.params.id;
-  userDb
-    .getById(id)
-    .then(user => {
-      if (user) {
-        res.status(200).json(user);
-      }
-    })
-    .catch(error => {
-      res.status(500).json({ errorMessage: "User could not be retrieved" });
     });
 });
 
@@ -77,10 +70,43 @@ server.get("/posts", (req, res) => {
     });
 });
 
-server.post("/users", validateUser, (req, res) => {
+server.get("/user/:id", validateUserId, (req, res) => {
+  const id = req.params.id;
+  userDb
+    .getById(id)
+    .then(user => {
+      if (user) {
+        res.status(200).json(user);
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ errorMessage: "User could not be retrieved" });
+    });
+});
+
+server.get("/user/:id/posts", validateUserId, (req, res) => {
+  let id = req.params.id;
+  userDb
+    .getUserPosts(id)
+    .then(posts => {
+      res.status(200).json(posts);
+    })
+    .catch(error =>
+      res.status(500).json({ errorMessage: "could not get posts" })
+    );
+});
+
+server.post("/user", validateUser, (req, res) => {
   let user = req.body;
   userDb.insert(user).then(data => {
     res.status(201).json({ ...data, ...user });
+  });
+});
+
+server.post("/user/:id/posts", (req, res) => {
+  let post = req.body;
+  postDb.insert(post).then(data => {
+    res.status(201).json({ ...data, ...post });
   });
 });
 
