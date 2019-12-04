@@ -7,6 +7,25 @@ server.use(logger);
 const userDb = require("./users/userDb");
 const postDb = require("./posts/postDb");
 
+//custom middleware
+
+function logger(req, res, next) {
+  console.log(`[${new Date().toISOString()}] ${req.method} to ${req.url})}`);
+  next();
+}
+
+function validateUserId(req, res, next) {
+  let id = req.params.id;
+  userDb.getById(id).then(retrieved => {
+    if (retrieved) {
+      req.user = user;
+    } else {
+      res.status(400).json({ errorMessage: "Invalid user id" });
+    }
+  });
+  next();
+}
+
 server.get("/", (req, res) => {
   res.send(`<h2>Let's write some middleware!</h2>`);
 });
@@ -22,6 +41,20 @@ server.get("/users", (req, res) => {
     });
 });
 
+server.get("/users/:id", validateUserId, (req, res) => {
+  const id = req.params.id;
+  userDb
+    .getById(id)
+    .then(user => {
+      if (user) {
+        res.status(200).json(user);
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ errorMessage: "User could not be retrieved" });
+    });
+});
+
 server.get("/posts", (req, res) => {
   postDb
     .get()
@@ -32,15 +65,6 @@ server.get("/posts", (req, res) => {
       res.status(500).json({ errorMessage: "Posts could not be retrieved" });
     });
 });
-
-//custom middleware
-
-function logger(req, res, next) {
-  console.log(`[${new Date().toISOString()}] ${req.method} to ${req.url})}`);
-  next();
-}
-
-// function validateUserId()
 
 // function validateUser()
 
