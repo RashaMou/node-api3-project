@@ -18,7 +18,7 @@ function validateUserId(req, res, next) {
   let id = req.params.id;
   userDb.getById(id).then(retrieved => {
     if (retrieved) {
-      req.user = user;
+      let user = req.user;
     } else {
       res.status(400).json({ errorMessage: "Invalid user id" });
     }
@@ -98,12 +98,17 @@ server.get("/user/:id/posts", validateUserId, (req, res) => {
 
 server.post("/user", validateUser, (req, res) => {
   let user = req.body;
-  userDb.insert(user).then(data => {
-    res.status(201).json({ ...data, ...user });
-  });
+  userDb
+    .insert(user)
+    .then(data => {
+      res.status(201).json({ ...data, ...user });
+    })
+    .catch(error =>
+      res.status(500).json({ message: "Error creating new user" })
+    );
 });
 
-server.post("/user/:id/posts", (req, res) => {
+server.post("/user/:id/posts", validateUserId, (req, res) => {
   const id = req.params.id;
   let newPost = req.body;
 
@@ -125,6 +130,30 @@ server.post("/user/:id/posts", (req, res) => {
     })
     .catch(error => {
       res.status(500).json({ message: "There was an error saving the post" });
+    });
+});
+
+server.put("/user/:id/", (req, res) => {
+  const newName = req.body;
+  const id = req.params.id;
+  userDb
+    .getById(id)
+    .then(user => {
+      user
+        ? userDb
+            .update(id, newName)
+            .then(user => {
+              res
+                .status(201)
+                .json({ message: "Username updated", user, newName });
+            })
+            .catch(error => res.status(500).json({ message: "oops" }))
+        : res
+            .status(404)
+            .json({ message: "Could not find user with specified ID" });
+    })
+    .catch(error => {
+      res.status(500).json({ message: "Error updating username" });
     });
 });
 
